@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python (in case of helper scripts)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Logs / temp
+*.log
+*.tmp
+
+# User-supplied papers / scratch (not part of the skill)
+papers/
+*.pdf
