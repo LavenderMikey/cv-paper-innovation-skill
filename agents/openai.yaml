@@ -1,0 +1,7 @@
+interface:
+  display_name: "CV Paper Innovation"
+  short_description: "Mine concrete CV paper innovation ideas and novelty checks."
+  default_prompt: "Use $cv-paper-innovation to analyze these CV papers and propose a concrete, testable research idea."
+
+policy:
+  allow_implicit_invocation: true

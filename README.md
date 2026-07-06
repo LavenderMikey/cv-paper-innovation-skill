@@ -1,92 +1,141 @@
 # cv-paper-innovation
 
-> 一个面向计算机视觉（CV）科研用户的 [Claude Code / Claude Agent Skill](https://docs.claude.com/en/docs/claude-code/skills)：读入多篇 CV 论文，挖掘**可落地、能解决真实问题、改进后能涨点**的创新框架，并做撞车（novelty）检查，避免重复造轮子。
+一个面向计算机视觉科研用户的 Agent Skill，可同时用于 Claude Code / Claude Agent 和 Codex：读入多篇 CV 论文，挖掘可落地、能解决真实问题、改进后有希望涨点的创新框架，并做 novelty check，避免重复造轮子。
 
-## 这个 Skill 解决什么问题
+## 解决什么问题
 
-科研用户面对一摞论文时，真实诉求是**找到一个能写成论文、能跑出涨点结果的创新点**。本 Skill 把这件事拆成一条可复用的工作流，输出一份结构化的中文 Markdown 报告。它始终带着四条自检标准（按重要性排序）：
+科研用户面对一摞论文时，真实诉求通常不是"总结论文"，而是找到一个能写成论文、能跑实验、能解释为什么可能涨点的新方案。本 Skill 把这件事拆成可复用工作流，默认输出结构化中文 Markdown 报告。
 
-1. **可落地、能实现** —— 提案具体到模块/机制层面，说清"动哪里、怎么动"，而不是"可以引入注意力机制"这种正确的废话。
-2. **解决真实存在的问题** —— 每个创新点都挂钩到某篇论文里确实存在的局限，而不是为创新而创新。
-3. **改进后能提升指标** —— 从机制层面解释"为什么这样改能涨点"，并给出可验证的实验设计。
-4. **不撞车** —— 提醒哪些想法可能已被做过，给出差异化建议。
+它始终带着四条自检标准：
+
+1. 可落地、能实现：具体到模块、机制、接口或实验设置。
+2. 解决真实存在的问题：挂钩到论文里的局限、失败场景或未覆盖任务。
+3. 改进后有涨点逻辑：说明机制原因和可验证实验。
+4. 尽量不撞车：检查相似工作，给出风险等级和差异化建议。
 
 ## 触发方式
 
-把几篇 CV 论文（PDF）丢给 Claude，并表达"想找创新点 / 想个新点子 / 怎么改能涨点 / 把这几篇的模块结合一下"之类的意图即可，例如：
+把 CV 论文 PDF、论文笔记或论文列表交给 Claude 或 Codex，并表达类似意图即可：
 
 - "帮我从这几篇论文里找创新点"
 - "这几篇论文能不能想个新点子"
 - "怎么改进能涨点"
-- "把这几篇的模块结合一下"
-
-即使没有显式说"用 skill"，匹配到上述意图时也会自动触发。
+- "把这几篇论文的模块结合一下"
+- "帮我设计一个可以写论文的新模型"
 
 ## 工作流程
 
 | 步骤 | 内容 |
 | --- | --- |
-| 1. 确定阅读方案 | 按论文数量自适应：1–4 篇逐篇精读；5–10 篇先筛后精读 3–5 篇；10 篇以上先快筛核心子集再精读 |
-| 2. 确认方向、加载领域常识 | 识别 CV 子方向，**只**加载对应一份 `references/` 参考文件（省上下文、更聚焦） |
-| 3. 逐篇解析 | 提取核心任务 / 创新点 / 关键方法 / 报告指标 / 仍存在的局限（挖创新点的金矿） |
-| 4.（可选）联网搜索 | 针对关键问题检索近期相关工作，作为模块迁移素材与撞车依据；不联网时对具体文献引用标注"⚠️需人工核实" |
-| 5. 整理出一个完整新模型 | 给出明确的 **baseline + 2–3 条具体改动**，其中至少一条是**有参考佐证的原创改动** |
-| 6. 撞车检查 | 优先联网；分别查"通用领域是否已有该 primitive"和"本子领域是否已被做过"，给出风险等级 + 差异化建议 |
-| 7. 方案推荐程度 | 用 ⭐⭐⭐ / ⭐⭐ / ⭐ 排序，明确告诉用户先做哪个、哪些不建议碰 |
+| 1. 确定阅读方案 | 按论文数量自适应：少量精读，多篇先筛后读 |
+| 2. 加载领域参考 | 按检测、分割、跟踪等方向只加载必要 reference |
+| 3. 逐篇解析 | 提取任务、方法、创新点、指标、局限 |
+| 4. 检索相关工作 | 需要最新性或撞车检查时联网核实 |
+| 5. 形成新模型 | 给出 baseline + 2-3 条具体改动 |
+| 6. novelty check | 判断 primitive 和本子领域是否已被做过 |
+| 7. 推荐排序 | 明确强推、谨慎、不建议优先做的方向 |
 
 ## 仓库结构
 
-```
+```text
 cv-paper-innovation/
-├── SKILL.md              # Skill 主文件（frontmatter + 完整工作流与报告结构）
-├── README.md             # 本文件
-└── references/           # 各 CV 子方向的领域常识（按需加载）
-    ├── common.md         # 跨方向通用：骨干网络、可迁移模块、训练技巧、评估原则
-    ├── detection.md      # 目标检测：经典 baseline、数据集、指标、可挖掘痛点
-    ├── segmentation.md   # 图像/实例/全景/视频分割
-    └── tracking.md       # 目标跟踪（SOT / MOT / VLT）
+├── SKILL.md
+├── agents/
+│   └── openai.yaml
+└── references/
+    ├── common.md
+    ├── detection.md
+    ├── segmentation.md
+    └── tracking.md
 ```
 
-`references/` 中的文件提供各方向的经典 baseline、常用数据集与评价指标，用来判断"现有 SOTA 大概在什么水平""新提案该跟谁比"。其中的具体数值仅作量级参考，涉及精确数值时会提示用户核实。
+`references/` 提供各方向的 baseline、数据集、评价指标和常见痛点。具体数值只作量级参考，涉及精确指标时仍需核实原论文或最新 leaderboard。
 
-## 报告结构（默认精简直给）
+## 安装与使用
+
+本仓库已做双端适配：
+
+- Claude 使用 `SKILL.md` 和 `references/` 中的工作流与领域参考。
+- Codex 使用同一份 `SKILL.md`，并额外读取 `agents/openai.yaml` 作为界面元数据和默认提示。
+
+### Claude Code / Claude Agent
+
+用户级安装：
+
+```bash
+mkdir -p ~/.claude/skills
+cp -R cv-paper-innovation ~/.claude/skills/
+```
+
+Windows PowerShell 示例：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
+Copy-Item -Recurse -Force .\cv-paper-innovation "$env:USERPROFILE\.claude\skills\"
+```
+
+项目级安装：
+
+```bash
+mkdir -p .claude/skills
+cp -R cv-paper-innovation .claude/skills/
+```
+
+安装后重启或重新加载 Claude Code / Claude Agent。之后可以直接提出"帮我从这几篇论文里找创新点"这类请求，也可以显式说明使用 `cv-paper-innovation` skill。
+
+### Codex
+
+用户级安装：
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R cv-paper-innovation ~/.codex/skills/
+```
+
+Windows PowerShell 示例：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
+Copy-Item -Recurse -Force .\cv-paper-innovation "$env:USERPROFILE\.codex\skills\"
+```
+
+项目级安装：
+
+```bash
+mkdir -p .codex/skills
+cp -R cv-paper-innovation .codex/skills/
+```
+
+安装后重启或重新加载 Codex，即可通过 `$cv-paper-innovation` 显式调用，或在匹配相关科研意图时被自动触发。
+
+## 输出骨架
 
 ```markdown
+## 阅读范围
+
 ## 推荐模型：[名字]（暂名）
-**Baseline：** [选哪个现有方法 + 一句为什么]
-**修改建议（2–3 条，注明来源：小改 baseline / 迁移自某篇 / 联网外部模块）**
-- ① [核心/原创改动] —— 动哪里、怎么动；建立在 [某篇] 的 [某观察] 之上
-- ② [迁移或外部改动] —— 从 [某篇/某外部工作] 迁移什么、接口怎么对齐
-- ③ [小改或协同改动] —— 与 ①/② 怎么配合、为什么理论上能涨点
-**涨点锚点：** 对照 baseline 原指标，预期在哪提升、机制原因
-**实验设计：** baseline / 数据集 / 指标 / 消融
+**Baseline：** ...
 
-## 撞车检查（联网）
-- 通用领域是否已有该 primitive；本子领域是否已被做过；最接近的工作
-- 风险等级 + 差异化建议
+**核心改动**
+1. ...
+2. ...
+3. ...
 
-## 各方向推荐程度
+**为什么可能涨点：** ...
+
+**实验设计：**
+- Baseline：
+- 数据集 / 指标：
+- 消融：
+- 成本统计：
+
+## 撞车检查
+| 改动 | 风险 | 最接近工作 | 差异化建议 |
+
+## 推荐程度
 | 程度 | 方向 | 理由 |
 ```
 
-只有当用户明确要"完整逐篇解析"时，才在前面补一节论文逐篇解析。
+## 设计理念
 
-## 如何使用
-
-这是一个 Agent Skill，安装到 Claude Code 的 skills 目录后即可被自动识别：
-
-```
-~/.claude/skills/cv-paper-innovation/      # 用户级（对所有项目可用）
-# 或
-<project>/.claude/skills/cv-paper-innovation/   # 项目级
-```
-
-把目录放到上述任一位置，重启 / 重新加载 Claude Code，再按上文"触发方式"提问即可。
-
-## 设计理念：宁缺毋滥
-
-两三个扎实、能落地的提案，远好过十个听起来很炫但没法实现的点子。本 Skill 刻意规避三类常见翻车：
-
-- **堆砌空泛建议**（"引入注意力""加多尺度融合"）——每条建议都要落到具体模块。
-- **杜撰文献**——未联网时凡涉及具体论文名/作者/数值的引用都标注不确定。
-- **指标不可比**——提涨点时锚定到记录的原始指标和对应数据集，不凭空说"能提升 N 个点"。
+两三个扎实、能落地、能验证的提案，远好过十个听起来很炫但没法实现的点子。未联网时，凡涉及具体论文名、作者、年份、数值或链接，都应标注需要人工核实。
